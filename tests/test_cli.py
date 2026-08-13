@@ -92,3 +92,21 @@ def test_status_and_mark(root, capsys):
 def test_config_error_returns_1(tmp_path, capsys):
     assert cli.main(["status"], root=tmp_path) == 1
     assert "config.yaml" in capsys.readouterr().out
+
+
+def test_generate_without_force_on_existing_outputs_returns_1(root, monkeypatch, capsys):
+    store, leads = seed(root, n=1, status="scored")
+    lead = leads[0]
+    loaded = store.load_lead(lead.id)
+    loaded.score = 0.8
+    store.update_lead(loaded)
+    monkeypatch.setattr(
+        cli, "get_provider", lambda config: type("P", (), {"complete": lambda self, m, json_mode=False: "content"})()
+    )
+    # Generate successfully the first time
+    assert cli.main(["generate", lead.id], root=root) == 0
+    capsys.readouterr()
+    # Try to generate again without --force; should fail with return code 1
+    assert cli.main(["generate", lead.id], root=root) == 1
+    out = capsys.readouterr().out
+    assert "--force" in out

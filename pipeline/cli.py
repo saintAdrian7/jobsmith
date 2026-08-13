@@ -25,12 +25,13 @@ def main(argv: list[str] | None = None, root: Path | None = None) -> int:
             "mark": lambda: store.mark(args.lead_id, args.status),
         }[args.command]()
         return 0
-    except ConfigError as e:
+    except (ConfigError, FileExistsError) as e:
         print(e)
         return 1
 
 
 def _parse(argv: list[str] | None) -> argparse.Namespace:
+    """Parse command-line arguments into subcommand and options."""
     parser = argparse.ArgumentParser(prog="pipeline")
     commands = parser.add_subparsers(dest="command", required=True)
     source = commands.add_parser("source", help="fetch leads from sources")
@@ -48,7 +49,8 @@ def _parse(argv: list[str] | None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def _source(args, config: Config, store: Store, root: Path) -> None:
+def _source(args: argparse.Namespace, config: Config, store: Store, root: Path) -> None:
+    """Fetch leads from one or all sources, apply must filters, deduplicate."""
     iep = load_iep(root)
     must = iep.get("must", {})
     names = [args.source] if args.source else sorted(REGISTRY)
@@ -73,13 +75,15 @@ def _source(args, config: Config, store: Store, root: Path) -> None:
         print(f"{name}: sourced {sourced}, filtered {filtered}, duplicate {duplicate}")
 
 
-def _score(args, config: Config, store: Store, root: Path) -> None:
+def _score(args: argparse.Namespace, config: Config, store: Store, root: Path) -> None:
+    """Score new leads (or all with --all) and output scores."""
     rows = score_leads(store, get_provider(config), load_iep(root), only_new=not args.all)
     for row in rows:
         print(f"{row['score']} {row['company']} {row['id']}" + (f"  error: {row['error']}" if row.get("error") else ""))
 
 
-def _generate(args, config: Config, store: Store, root: Path) -> None:
+def _generate(args: argparse.Namespace, config: Config, store: Store, root: Path) -> None:
+    """Generate artifacts for one lead or top N best-scored leads."""
     if not args.lead_id and not args.top:
         raise ConfigError("generate needs a LEAD_ID or --top N")
     truth = load_truth(root)
@@ -100,6 +104,7 @@ def _generate(args, config: Config, store: Store, root: Path) -> None:
 
 
 def _status(store: Store) -> None:
+    """Print count summaries for leads, outputs, and applications by status."""
     leads = store.read_index("leads")
     by_status: dict[str, int] = {}
     for entry in leads.values():
