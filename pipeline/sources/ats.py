@@ -26,13 +26,18 @@ class AtsSource:
             raise SourceUnavailable("no companies configured under sources.ats.companies")
         leads: list[Lead] = []
         for slug in companies:
-            leads.extend(self._greenhouse(slug) or self._lever(slug))
+            gh_leads = self._greenhouse(slug)
+            if gh_leads is not None:
+                leads.extend(gh_leads)
+            else:
+                leads.extend(self._lever(slug))
         return leads
 
-    def _greenhouse(self, slug: str) -> list[Lead]:
+    def _greenhouse(self, slug: str) -> list[Lead] | None:
+        """Return leads if board exists, or None if board not found; never falls back when board exists with no jobs."""
         response = self.client.get(f"https://boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=true")
         if response.status_code != 200:
-            return []
+            return None
         return [
             Lead(
                 company=slug,
