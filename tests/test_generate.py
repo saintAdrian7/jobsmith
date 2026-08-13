@@ -15,6 +15,18 @@ class FakeProvider:
         return f"artifact {len(self.calls)}"
 
 
+class FailingProvider:
+    def __init__(self, fail_on_call=2):
+        self.calls = []
+        self.fail_on_call = fail_on_call
+
+    def complete(self, messages, json_mode=False):
+        self.calls.append(messages)
+        if len(self.calls) == self.fail_on_call:
+            raise Exception("Provider failed")
+        return f"artifact {len(self.calls)}"
+
+
 def make_truth(root):
     truth = root / "truth"
     (truth / "writing").mkdir(parents=True)
@@ -64,3 +76,16 @@ def test_generate_refuses_overwrite_without_force(tmp_path):
     with pytest.raises(FileExistsError):
         generate_for(lead.id, store, FakeProvider(), load_truth(tmp_path), ["resume"])
     generate_for(lead.id, store, FakeProvider(), load_truth(tmp_path), ["resume"], force=True)
+
+
+def test_generate_cleans_up_on_partial_failure(tmp_path):
+    make_truth(tmp_path)
+    store = Store(tmp_path)
+    lead = seed_lead(store)
+    provider = FailingProvider(fail_on_call=2)
+    with pytest.raises(Exception, match="Provider failed"):
+        generate_for(lead.id, store, provider, load_truth(tmp_path), ["resume", "cover_letter"])
+    output_dir = store.root / "outputs" / lead.id
+    assert not output_dir.exists(), "Output directory should be cleaned up after partial failure"
+    assert store.read_index("leads")[lead.id]["status"] == "new", "Lead status should remain unchanged"
+    assert lead.id not in store.read_applications(), "Lead should not be in applications tracker"

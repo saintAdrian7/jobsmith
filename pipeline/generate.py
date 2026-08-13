@@ -1,4 +1,5 @@
 import json
+import shutil
 from pathlib import Path
 
 from pipeline.config import ConfigError
@@ -49,15 +50,20 @@ def generate_for(
     lead = store.load_lead(lead_id)
     context = f"TRUTH:\n{truth}\n\nLEAD:\n{json.dumps(lead.to_dict(), indent=2)}"
     paths = []
-    for name in artifacts:
-        content = provider.complete(
-            [
-                {"role": "system", "content": PROMPTS[name]},
-                {"role": "user", "content": context},
-            ]
-        )
-        paths.append(store.save_artifact(lead_id, name, content))
-    store.record_output(lead_id, lead.company, artifacts)
-    store.set_lead_status(lead_id, "generated")
-    store.mark(lead_id, "generated")
+    try:
+        for name in artifacts:
+            content = provider.complete(
+                [
+                    {"role": "system", "content": PROMPTS[name]},
+                    {"role": "user", "content": context},
+                ]
+            )
+            paths.append(store.save_artifact(lead_id, name, content))
+        store.record_output(lead_id, lead.company, artifacts)
+        store.set_lead_status(lead_id, "generated")
+        store.mark(lead_id, "generated")
+    except Exception:
+        if output_dir.exists():
+            shutil.rmtree(output_dir)
+        raise
     return paths
