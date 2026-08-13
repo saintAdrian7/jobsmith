@@ -1,0 +1,4 @@
+httpx
+pyyaml
+python-dotenv
+pytest
