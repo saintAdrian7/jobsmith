@@ -11,8 +11,14 @@ application tracking.
 
 ## Quick start
 
+This repo template tracks `truth/`, `leads/`, `outputs/`, and `outbound/` in git. If you run the
+pipeline with your real data in a public fork or clone, your resume, personal facts, and application
+history get published along with the code. Run your real data in a private repo, or add those
+folders to `.gitignore` first.
+
     pip install -r requirements.txt
-    copy .env.example .env        # fill the keys you have; ATS needs none
+    cp .env.example .env          # fill the keys you have; ATS needs none
+                                   # Windows: copy .env.example .env
     # fill iep.yaml, truth/resume.md, truth/facts.yaml, config.yaml
     python -m pipeline source
     python -m pipeline score

@@ -63,6 +63,18 @@ def test_double_failure_continues_batch(tmp_path):
     assert statuses == ["new", "scored"]
 
 
+def test_only_new_false_keeps_generated_status_but_updates_score(tmp_path):
+    store = Store(tmp_path)
+    leads = seed(store, 1)
+    store.set_lead_status(leads[0].id, "generated")
+    provider = FakeProvider([{"score": 0.8, "rationale": "ok"}])
+    rows = score_leads(store, provider, iep={}, only_new=False)
+    assert rows[0]["score"] == 0.8
+    index = store.read_index("leads")
+    assert index[leads[0].id]["status"] == "generated"
+    assert index[leads[0].id]["score"] == 0.8
+
+
 def test_schema_invalid_response_gets_one_reask(tmp_path):
     store = Store(tmp_path)
     seed(store, 1)

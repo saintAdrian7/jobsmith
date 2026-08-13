@@ -38,35 +38,41 @@ class AtsSource:
         response = self.client.get(f"https://boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=true")
         if response.status_code != 200:
             return None
-        return [
-            Lead(
-                company=slug,
-                title=job["title"],
-                url=job["absolute_url"],
-                source=self.name,
-                description=job.get("content", ""),
-                location=job.get("location", {}).get("name", ""),
-                remote=_is_remote(job.get("location", {}).get("name", "")),
+        leads = []
+        for job in response.json().get("jobs", []):
+            loc = job.get("location", {}).get("name", "")
+            leads.append(
+                Lead(
+                    company=slug,
+                    title=job["title"],
+                    url=job["absolute_url"],
+                    source=self.name,
+                    description=job.get("content", ""),
+                    location=loc,
+                    remote=_is_remote(loc) if loc else None,
+                )
             )
-            for job in response.json().get("jobs", [])
-        ]
+        return leads
 
     def _lever(self, slug: str) -> list[Lead]:
         response = self.client.get(f"https://api.lever.co/v0/postings/{slug}?mode=json")
         if response.status_code != 200:
             return []
-        return [
-            Lead(
-                company=slug,
-                title=job["text"],
-                url=job["hostedUrl"],
-                source=self.name,
-                description=job.get("descriptionPlain", ""),
-                location=job.get("categories", {}).get("location", ""),
-                remote=_is_remote(job.get("categories", {}).get("location", "")),
+        leads = []
+        for job in response.json():
+            loc = job.get("categories", {}).get("location", "")
+            leads.append(
+                Lead(
+                    company=slug,
+                    title=job["text"],
+                    url=job["hostedUrl"],
+                    source=self.name,
+                    description=job.get("descriptionPlain", ""),
+                    location=loc,
+                    remote=_is_remote(loc) if loc else None,
+                )
             )
-            for job in response.json()
-        ]
+        return leads
 
 
 if __name__ == "__main__":

@@ -45,7 +45,7 @@ class ApifySource:
                     source=self.name,
                     description=item.get("description", ""),
                     location=location,
-                    remote="remote" in location.lower(),
+                    remote=("remote" in location.lower()) if location else None,
                 )
             )
         return leads

@@ -18,13 +18,15 @@ def score_leads(store: Store, provider, iep: dict, only_new: bool = True) -> lis
     for lead_id, entry in index.items():
         if only_new and entry["status"] != "new":
             continue
+        current_status = entry["status"]
         lead = store.load_lead(lead_id)
         try:
             result = _ask_with_one_retry(provider, iep, lead)
             lead.score = float(result["score"])
             lead.score_rationale = str(result.get("rationale", ""))
             store.update_lead(lead)
-            store.set_lead_status(lead_id, "scored")
+            if current_status == "new":
+                store.set_lead_status(lead_id, "scored")
             rows.append({"id": lead_id, "company": lead.company, "score": lead.score})
         except (LLMError, KeyError, TypeError, ValueError) as e:
             rows.append({"id": lead_id, "company": lead.company, "score": None, "error": str(e)})

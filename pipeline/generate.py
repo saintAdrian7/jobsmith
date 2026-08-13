@@ -45,8 +45,16 @@ def generate_for(
 ) -> list[Path]:
     """Generate all artifacts for one lead; refuse to overwrite existing output without force."""
     output_dir = store.root / "outputs" / lead_id
-    if not force and output_dir.exists() and any(output_dir.iterdir()):
+    has_existing = output_dir.exists() and any(output_dir.iterdir())
+    if not force and has_existing:
         raise FileExistsError(f"{output_dir} already has artifacts; rerun with --force to regenerate")
+    backup_dir = output_dir.with_name(output_dir.name + ".bak")
+    if force and has_existing:
+        if backup_dir.exists():
+            shutil.rmtree(backup_dir)
+        output_dir.rename(backup_dir)
+    else:
+        backup_dir = None
     lead = store.load_lead(lead_id)
     context = f"TRUTH:\n{truth}\n\nLEAD:\n{json.dumps(lead.to_dict(), indent=2)}"
     paths = []
@@ -65,5 +73,10 @@ def generate_for(
     except Exception:
         if output_dir.exists():
             shutil.rmtree(output_dir)
+        if backup_dir is not None and backup_dir.exists():
+            backup_dir.rename(output_dir)
         raise
+    else:
+        if backup_dir is not None and backup_dir.exists():
+            shutil.rmtree(backup_dir)
     return paths

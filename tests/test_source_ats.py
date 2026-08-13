@@ -78,6 +78,27 @@ def test_no_companies_raises_unavailable(tmp_path):
         assert "companies" in str(e)
 
 
+def test_greenhouse_empty_location_is_unknown_remote(tmp_path):
+    body = {
+        "jobs": [
+            {
+                "title": "Mystery Role",
+                "absolute_url": "https://boards.greenhouse.io/acme/jobs/2",
+                "location": {"name": ""},
+                "content": "TBD",
+            }
+        ]
+    }
+
+    def handler(request):
+        if "greenhouse" in request.url.host:
+            return httpx.Response(200, json=body)
+        return httpx.Response(404)
+
+    leads = get_source("ats", make_config(tmp_path, ["acme"]), client=transport(handler)).fetch({})
+    assert leads[0].remote is None
+
+
 def test_greenhouse_with_no_jobs_does_not_fall_back_to_lever(tmp_path):
     lever_called = []
 

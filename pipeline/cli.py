@@ -99,8 +99,13 @@ def _generate(args: argparse.Namespace, config: Config, store: Store, root: Path
         ]
         ids = [lead_id for _, lead_id in sorted(scored, reverse=True)[: args.top]]
     for lead_id in ids:
-        paths = generate_for(lead_id, store, provider, truth, artifacts, force=args.force)
-        print(f"{lead_id}: wrote {', '.join(p.name for p in paths)}")
+        try:
+            paths = generate_for(lead_id, store, provider, truth, artifacts, force=args.force)
+            print(f"{lead_id}: wrote {', '.join(p.name for p in paths)}")
+        except FileExistsError as e:
+            if args.lead_id:
+                raise
+            print(f"{lead_id}: skipped - {e}")
 
 
 def _status(store: Store) -> None:

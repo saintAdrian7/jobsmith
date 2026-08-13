@@ -81,6 +81,25 @@ def test_generate_top_picks_best_scored(root, monkeypatch, capsys):
     assert list(outputs.values())[0]["company"] == "C1"
 
 
+def test_generate_top_skips_existing_and_continues(root, monkeypatch, capsys):
+    store, leads = seed(root, n=2, status="scored")
+    for i, lead in enumerate(leads):
+        loaded = store.load_lead(lead.id)
+        loaded.score = 0.2 + i * 0.6
+        store.update_lead(loaded)
+    monkeypatch.setattr(
+        cli, "get_provider", lambda config: type("P", (), {"complete": lambda self, m, json_mode=False: "content"})()
+    )
+    # C1 has the higher score (0.8) and is generated up front, so --top hits it first.
+    assert cli.main(["generate", leads[1].id], root=root) == 0
+    capsys.readouterr()
+    assert cli.main(["generate", "--top", "2"], root=root) == 0
+    out = capsys.readouterr().out
+    assert "skipped" in out
+    outputs = store.read_index("outputs")
+    assert leads[0].id in outputs, "second lead should still be generated after the first is skipped"
+
+
 def test_status_and_mark(root, capsys):
     _, leads = seed(root)
     assert cli.main(["mark", leads[0].id, "applied"], root=root) == 0

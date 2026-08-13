@@ -33,6 +33,18 @@ def test_fetch_maps_items_and_skips_missing_url(tmp_path, monkeypatch):
     assert leads[0].source == "apify"
 
 
+def test_fetch_missing_location_is_unknown_remote(tmp_path, monkeypatch):
+    monkeypatch.setenv("APIFY_TOKEN", "t")
+    items = [{"title": "T", "companyName": "Beta", "link": "https://b.co/j/9"}]
+
+    def handler(request):
+        return httpx.Response(201, json=items)
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    leads = get_source("apify", make_config(tmp_path), client=client).fetch({})
+    assert leads[0].remote is None
+
+
 def test_missing_token_raises(tmp_path, monkeypatch):
     monkeypatch.delenv("APIFY_TOKEN", raising=False)
     with pytest.raises(SourceUnavailable, match="APIFY_TOKEN"):
