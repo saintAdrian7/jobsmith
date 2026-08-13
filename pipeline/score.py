@@ -41,6 +41,22 @@ def _ask_with_one_retry(provider, iep: dict, lead) -> dict:
         },
     ]
     try:
-        return provider.complete(messages, json_mode=True)
+        result = provider.complete(messages, json_mode=True)
+        _validate_response(result)
+        return result
     except LLMError:
-        return provider.complete(messages, json_mode=True)
+        result = provider.complete(messages, json_mode=True)
+        _validate_response(result)
+        return result
+
+
+def _validate_response(result: dict) -> None:
+    """Validate response schema; raise LLMError on invalid shape."""
+    if not isinstance(result, dict):
+        raise LLMError(f"response must be dict, got {type(result).__name__}")
+    if "score" not in result:
+        raise LLMError("response missing required 'score' field")
+    try:
+        float(result["score"])
+    except (TypeError, ValueError) as e:
+        raise LLMError(f"'score' must be numeric: {e}") from e

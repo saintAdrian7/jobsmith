@@ -61,3 +61,12 @@ def test_double_failure_continues_batch(tmp_path):
     index = store.read_index("leads")
     statuses = sorted(entry["status"] for entry in index.values())
     assert statuses == ["new", "scored"]
+
+
+def test_schema_invalid_response_gets_one_reask(tmp_path):
+    store = Store(tmp_path)
+    seed(store, 1)
+    provider = FakeProvider([{"rationale": "ok"}, {"score": 0.6, "rationale": "ok"}])
+    rows = score_leads(store, provider, iep={})
+    assert rows[0]["score"] == 0.6
+    assert provider.results == []
