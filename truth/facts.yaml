@@ -1,0 +1,9 @@
+# Structured facts the generator may cite. Fill in.
+name: FILL_ME
+location: FILL_ME
+links:
+  github: FILL_ME
+  linkedin: FILL_ME
+skills: []
+work_authorization: FILL_ME
+constraints: []   # e.g. "remote only", "timezone UTC+3"

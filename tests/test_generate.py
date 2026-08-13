@@ -89,3 +89,20 @@ def test_generate_cleans_up_on_partial_failure(tmp_path):
     assert not output_dir.exists(), "Output directory should be cleaned up after partial failure"
     assert store.read_index("leads")[lead.id]["status"] == "new", "Lead status should remain unchanged"
     assert lead.id not in store.read_applications(), "Lead should not be in applications tracker"
+
+
+def test_generate_force_failure_restores_prior_artifacts(tmp_path):
+    make_truth(tmp_path)
+    store = Store(tmp_path)
+    lead = seed_lead(store)
+    generate_for(lead.id, store, FakeProvider(), load_truth(tmp_path), ["resume", "cover_letter"])
+    output_dir = store.root / "outputs" / lead.id
+    original_resume = (output_dir / "resume.md").read_text(encoding="utf-8")
+    original_cover_letter = (output_dir / "cover_letter.md").read_text(encoding="utf-8")
+    failing = FailingProvider(fail_on_call=2)
+    with pytest.raises(Exception, match="Provider failed"):
+        generate_for(lead.id, store, failing, load_truth(tmp_path), ["resume", "cover_letter"], force=True)
+    assert output_dir.exists(), "original artifacts should remain intact after a failed force regenerate"
+    assert (output_dir / "resume.md").read_text(encoding="utf-8") == original_resume
+    assert (output_dir / "cover_letter.md").read_text(encoding="utf-8") == original_cover_letter
+    assert not output_dir.with_name(output_dir.name + ".bak").exists(), "no .bak dir should be left behind"
