@@ -1,0 +1,19 @@
+llm:
+  provider: anthropic          # anthropic | openai_compat
+  model: claude-sonnet-5
+  api_key_env: ANTHROPIC_API_KEY
+  base_url: https://api.mistral.ai/v1   # used by openai_compat only
+  max_tokens: 4096
+
+sources:
+  ats:
+    companies: []              # Greenhouse/Lever board slugs, e.g. [stripe, vercel]
+  exa:
+    query: ""                  # e.g. "seed-stage startup hiring remote entry-level software engineer"
+    num_results: 25
+  apify:
+    actor: ""                  # e.g. bebity~linkedin-jobs-scraper
+    input: {}
+
+generation:
+  artifacts: [resume, cover_letter, recommendations]

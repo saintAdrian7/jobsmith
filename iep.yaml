@@ -1,0 +1,16 @@
+# Ideal Employer Profile. Fill the five criteria below; the pipeline reads this file.
+# `must` rules are enforced deterministically before any LLM call.
+# Everything else feeds LLM scoring (pipeline score).
+
+roles:                # 1. Target role titles
+  - FILL_ME e.g. software engineer
+seniority: FILL_ME    # 2. e.g. entry-level / junior
+remote_policy: FILL_ME  # 3. e.g. fully remote, hires from Kenya
+company_stage: FILL_ME  # 4. e.g. pre-seed or seed
+disqualifiers:        # 5. Instant rejections
+  - FILL_ME e.g. requires on-site in US
+
+must:
+  remote_required: true
+  title_includes_any: []   # empty list = allow any title
+  title_excludes: []       # e.g. [senior, staff, principal]
