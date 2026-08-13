@@ -57,7 +57,7 @@ leads/               [module 2] sourced employers
   <lead_id>.json     full lead record
 outputs/             [module 3] per-employer artifacts
   INDEX.md
-  index.json
+  index.json         lead_id -> {company, artifacts: [names], generated_at}
   <lead_id>/         resume.md, cover_letter.md, recommendations.md
 outbound/            [module 4] tracking only in v1
   INDEX.md
