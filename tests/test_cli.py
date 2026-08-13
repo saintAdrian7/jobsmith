@@ -90,9 +90,11 @@ def test_generate_top_skips_existing_and_continues(root, monkeypatch, capsys):
     monkeypatch.setattr(
         cli, "get_provider", lambda config: type("P", (), {"complete": lambda self, m, json_mode=False: "content"})()
     )
-    # C1 has the higher score (0.8) and is generated up front, so --top hits it first.
-    assert cli.main(["generate", leads[1].id], root=root) == 0
-    capsys.readouterr()
+    # C1 has the higher score (0.8) so --top hits it first; pre-seed its output dir
+    # directly (status stays "scored") to simulate stale-but-existing artifacts.
+    existing_dir = root / "outputs" / leads[1].id
+    existing_dir.mkdir(parents=True)
+    (existing_dir / "resume.md").write_text("stale", encoding="utf-8")
     assert cli.main(["generate", "--top", "2"], root=root) == 0
     out = capsys.readouterr().out
     assert "skipped" in out
