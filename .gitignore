@@ -1,7 +1,9 @@
 .env
 __pycache__/
 *.pyc
+temp_auto_push.bat
 .pytest_cache/
 docs/
 .superpowers/
 .gitignore
+branch_structure.json
